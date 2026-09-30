@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CalculaMédia SP — Simulador & Gestor Escolar</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+  <!-- Canvas para efeito de confetes quando aprovado -->
+  <canvas id="confetti-canvas"></canvas>
+
+  <div class="app-container">
+    <!-- Cabeçalho Principal -->
+    <header class="header-card">
+      <div class="header-content">
+        <div class="header-brand">
+          <div class="brand-icon">🎓</div>
+          <div>
+            <h1 class="app-title">CalculaMédia SP</h1>
+            <p class="app-subtitle">Simulador e Gestor de Desempenho Escolar</p>
+          </div>
+        </div>
+        <button id="btn-theme-toggle" class="btn-theme" title="Alternar Modo Escuro" aria-label="Alternar tema">
+          <span id="theme-icon">🌙</span>
+        </button>
+      </div>
+      
+      <!-- Informações Relevantes / Destaques da Escola -->
+      <div class="info-badges">
+        <div class="badge-item">
+          <span class="badge-dot dot-blue"></span>
+          <span>Média mínima para aprovação: <strong>6.0</strong></span>
+        </div>
+        <div class="badge-item">
+          <span class="badge-dot dot-yellow"></span>
+          <span>Recuperação: <strong>5.0 a 5.9</strong></span>
+        </div>
+        <div class="badge-item">
+          <span class="badge-dot dot-red"></span>
+          <span>Reprovação: <strong>Abaixo de 5.0</strong></span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Conteúdo Principal em Duas Colunas -->
+    <main class="main-grid">
+      <!-- Coluna Esquerda: Formulário de Entrada -->
+      <section class="card form-card">
+        <h2 class="card-title">
+          <span>📝</span> Dados da Disciplina & Notas
+        </h2>
+        <p class="card-description">
+          Informe os dados do aluno e as notas bimestrais (de 0.0 a 10.0). Se ainda não fechou o ano, preencha os bimestres que já possui para simular as notas restantes.
+        </p>
+
+        <form id="grade-form" onsubmit="return false;">
+          <div class="form-group">
+            <label for="student-name">Nome do Estudante (Opcional):</label>
+            <input type="text" id="student-name" placeholder="Ex: Pedro Henrique" />
+          </div>
+
+          <div class="form-group">
+            <label for="subject-name">Disciplina / Matéria:</label>
+            <div class="input-with-select">
+              <input type="text" id="subject-name" list="subject-suggestions" placeholder="Ex: Desenvolvimento de Sistemas" required />
+              <datalist id="subject-suggestions">
+                <option value="Desenvolvimento de Sistemas"></option>
+                <option value="Inteligência Artificial"></option>
+                <option value="Língua Portuguesa"></option>
+                <option value="Matemática"></option>
+                <option value="Banco de Dados"></option>
+                <option value="Programação Web"></option>
+                <option value="Física"></option>
+                <option value="Química"></option>
+                <option value="História"></option>
+                <option value="Geografia"></option>
+              </datalist>
+            </div>
+          </div>
+
+          <div class="bimonthly-grid">
+            <div class="form-group">
+              <label for="grade-1">1º Bimestre:</label>
+              <input type="number" id="grade-1" min="0" max="10" step="0.1" placeholder="0.0 a 10.0" />
+            </div>
+            <div class="form-group">
+              <label for="grade-2">2º Bimestre:</label>
+              <input type="number" id="grade-2" min="0" max="10" step="0.1" placeholder="0.0 a 10.0" />
+            </div>
+            <div class="form-group">
+              <label for="grade-3">3º Bimestre:</label>
+              <input type="number" id="grade-3" min="0" max="10" step="0.1" placeholder="0.0 a 10.0" />
+            </div>
+            <div class="form-group">
+              <label for="grade-4">4º Bimestre:</label>
+              <input type="number" id="grade-4" min="0" max="10" step="0.1" placeholder="0.0 a 10.0" />
+            </div>
+          </div>
+
+          <!-- Mensagem de erro de validação -->
+          <div id="validation-alert" class="alert-box alert-error" style="display: none;">
+            ⚠️ Por favor, digite notas válidas entre 0.0 e 10.0 e preencha pelo menos um bimestre.
+          </div>
+
+          <!-- Botões de Ação -->
+          <div class="form-actions">
+            <button type="button" id="btn-calculate" class="btn btn-primary">
+              <span class="btn-icon">⚡</span> Calcular Média
+            </button>
+            <button type="button" id="btn-save" class="btn btn-secondary" disabled>
+              <span class="btn-icon">💾</span> Salvar no Boletim
+            </button>
+            <button type="button" id="btn-clear" class="btn btn-outline">
+              <span class="btn-icon">🗑️</span> Limpar
+            </button>
+          </div>
+        </form>
+      </section>
+
+      <!-- Coluna Direita: Resultado Dinâmico & Simulação -->
+      <section class="card result-card">
+        <h2 class="card-title">
+          <span>📊</span> Resultado & Desempenho
+        </h2>
+
+        <!-- Estado Inicial (Antes de Calcular) -->
+        <div id="empty-state" class="empty-state">
+          <div class="empty-icon">📈</div>
+          <p class="empty-text">Preencha as notas ao lado e clique em <strong>"Calcular Média"</strong> para visualizar sua situação e projeções.</p>
+        </div>
+
+        <!-- Painel de Resultado Calculado -->
+        <div id="result-panel" class="result-panel" style="display: none;">
+          <div class="score-display">
+            <div class="score-meta">
+              <span id="res-subject" class="score-subject">Desenvolvimento de Sistemas</span>
+              <span id="res-student" class="score-student">Estudante</span>
+            </div>
+            <div class="score-value-wrapper">
+              <span class="score-label">Média Calculada</span>
+              <div id="res-average" class="score-number">0.0</div>
+            </div>
+          </div>
+
+          <!-- Barra de Progresso com Animação -->
+          <div class="progress-container">
+            <div class="progress-labels">
+              <span>0.0</span>
+              <span>Meta: 6.0</span>
+              <span>10.0</span>
+            </div>
+            <div class="progress-track">
+              <div id="progress-bar" class="progress-bar" style="width: 0%;"></div>
+            </div>
+          </div>
+
+          <!-- Badge de Status -->
+          <div class="status-wrapper">
+            <div id="status-badge" class="status-badge status-approved">
+              <span id="status-icon">🎉</span>
+              <span id="status-text">Aprovado</span>
+            </div>
+          </div>
+
+          <!-- Feedback & Projeção Inteligente -->
+          <div id="simulation-box" class="simulation-box">
+            <h3 class="simulation-title">💡 Projeção & Dica de Estudo</h3>
+            <p id="simulation-text" class="simulation-desc">
+              Carregando simulação...
+            </p>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Seção de Histórico / Boletim Salvo (Melhoria da Etapa 7) -->
+    <section class="card history-card">
+      <div class="history-header">
+        <div>
+          <h2 class="card-title"><span>📚</span> Histórico do Boletim</h2>
+          <p class="card-description">Disciplinas salvas nesta sessão com média geral acumulada.</p>
+        </div>
+        <div class="overall-badge">
+          <span>Média Geral:</span>
+          <strong id="overall-average">--</strong>
+        </div>
+      </div>
+
+      <div class="table-responsive">
+        <table class="history-table">
+          <thead>
+            <tr>
+              <th>Matéria</th>
+              <th>1º Bim</th>
+              <th>2º Bim</th>
+              <th>3º Bim</th>
+              <th>4º Bim</th>
+              <th>Média</th>
+              <th>Situação</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody id="history-table-body">
+            <tr class="empty-table-row">
+              <td colspan="8">Nenhuma disciplina salva no histórico ainda. Calcule uma média e clique em "Salvar no Boletim".</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Rodapé Informativo -->
+    <footer class="app-footer">
+      <p>Desenvolvido para o <strong>Roteiro de Atividade Prática — Desenvolvimento de Sistemas (3ºB)</strong></p>
+      <p>Tecnologias: HTML5 Semântico, CSS3 Flexbox/Grid/Animações e JavaScript Vanilla puro.</p>
+    </footer>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
